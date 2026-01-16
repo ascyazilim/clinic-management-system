@@ -34,9 +34,6 @@ The project follows a layered architecture:
 
 controller -> service -> repository -> database
 
-shell
-Kodu kopyala
-
 ### Package Structure
 
 com.asc.clinicms
@@ -50,9 +47,6 @@ com.asc.clinicms
 │ ├── response
 │ └── exception
 └── ClinicMsApplication
-
-yaml
-Kodu kopyala
 
 ---
 
@@ -79,8 +73,6 @@ Exposes REST endpoints for patient-related operations.
 ### Create Patient
 POST /api/patients
 
-graphql
-Kodu kopyala
 
 ### Get All Patients (Paginated)
 GET /api/patients?page=0&size=10
@@ -90,9 +82,6 @@ Kodu kopyala
 
 ### Search Patient by Name
 GET /api/patients/search?keyword=ali&page=0&size=10
-
-yaml
-Kodu kopyala
 
 ---
 
@@ -126,20 +115,15 @@ spring:
 ▶️ Running the Application
 Clone the repository
 
-bash
-Kodu kopyala
+
 git clone https://github.com/your-username/clinic-management-system.git
 Configure PostgreSQL connection
 
 Run the application
 
-bash
-Kodu kopyala
 mvn spring-boot:run
 Application will start on:
 
-arduino
-Kodu kopyala
 http://localhost:8080
 🔮 Future Improvements
 Appointment management
