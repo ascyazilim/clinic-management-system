@@ -20,14 +20,16 @@ public abstract class BaseEntity {
 
     private LocalDateTime updatedAt;
 
+    private LocalDateTime deletedAt; //soft delete
+
     @PrePersist
-    public void onCreate() {
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
-    public void onUpdate(){
+    protected void onUpdate(){
         this.updatedAt = LocalDateTime.now();
     }
 }
