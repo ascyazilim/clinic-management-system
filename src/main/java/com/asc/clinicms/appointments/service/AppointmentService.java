@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -63,8 +64,11 @@ public class AppointmentService {
                 req.endAt()
         );
 
-        if (overlap) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Doctor already has an appointment in this time range.");
+        if (req.status() == AppointmentStatus.SCHEDULED && overlap) {
+            throw new BusinessException(
+                    ErrorCode.CONFLICT,
+                    "Doctor already has an appointment in this time range."
+            );
         }
 
         a.setStartAt(req.startAt());
@@ -79,24 +83,72 @@ public class AppointmentService {
         a.setDeletedAt(LocalDateTime.now());
         appointmentRepository.save(a);
     }
+
+    @Transactional(readOnly = true)
     public Appointment get(Long id) {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Appointment not found: " +id));
     }
 
-    public Page<Appointment> list(Long doctorId, Long patientId, LocalDateTime from, LocalDateTime to, Pageable pageable){
-        return appointmentRepository.filter(doctorId, patientId, from, to, pageable);
+    @Transactional(readOnly = true)
+    public Page<Appointment> list(Long doctorId, Long patientId, LocalDateTime from, LocalDateTime to, Pageable pageable) {
+
+        if ((from == null) != (to == null)) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "Both 'from' and 'to' must be provided together"
+            );
+        }
+
+        boolean hasRange = (from != null && to != null);
+
+        if (doctorId != null && patientId != null) {
+            return hasRange
+                    ? appointmentRepository.findByDoctorIdAndPatientIdAndStartAtGreaterThanEqualAndEndAtLessThanEqual(
+                    doctorId, patientId, from, to, pageable)
+                    : appointmentRepository.findByDoctorIdAndPatientId(doctorId, patientId, pageable);
+        }
+
+        if (doctorId != null) {
+            return hasRange
+                    ? appointmentRepository.findByDoctorIdAndStartAtGreaterThanEqualAndEndAtLessThanEqual(
+                    doctorId, from, to, pageable)
+                    : appointmentRepository.findByDoctorId(doctorId, pageable);
+        }
+
+        if (patientId != null) {
+            return hasRange
+                    ? appointmentRepository.findByPatientIdAndStartAtGreaterThanEqualAndEndAtLessThanEqual(
+                    patientId, from, to, pageable)
+                    : appointmentRepository.findByPatientId(patientId, pageable);
+        }
+
+        // hiç filtre yoksa tüm randevular
+        return appointmentRepository.findAll(pageable);
     }
-    private void validateTimeRange(LocalDateTime startAt, LocalDateTime endAt){
+
+    private void validateTimeRange(LocalDateTime startAt, LocalDateTime endAt) {
         if (startAt == null || endAt == null) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "startAt and endAt are required");
         }
+
         if (!endAt.isAfter(startAt)) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "endAt must be after startAt");
         }
 
-        if (startAt.plusHours(4).isBefore(endAt)){
-            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Appointment duration is too long");
+        // (opsiyonel ama iyi) geçmişe randevu engeli
+        if (startAt.isBefore(LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "startAt cannot be in the past");
+        }
+
+
+        // (ileri seviye) minimum 15 dk, maksimum 2 saat
+        long minutes = java.time.Duration.between(startAt, endAt).toMinutes();
+        if (minutes < 15) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Appointment duration must be at least 15 minutes");
+        }
+        if (minutes > 120) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Appointment duration cannot exceed 120 minutes");
         }
     }
 }
