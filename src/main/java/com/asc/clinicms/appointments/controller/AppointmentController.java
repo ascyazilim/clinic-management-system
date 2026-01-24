@@ -46,8 +46,7 @@ public class AppointmentController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             Pageable pageable
             ){
-        var page = appointmentService.list(doctorId, patientId, from, to, pageable)
-                .map(AppointmentMapper::toResponse);
+        var page = appointmentService.list(doctorId, patientId, from, to, pageable);
         return ApiResponse.success(page);
     }
 }

@@ -1,9 +1,11 @@
 package com.asc.clinicms.appointments.service;
 
+import com.asc.clinicms.appointments.dto.AppointmentResponse;
 import com.asc.clinicms.appointments.dto.CreateAppointmentRequest;
 import com.asc.clinicms.appointments.dto.UpdateAppointmentRequest;
 import com.asc.clinicms.appointments.entity.Appointment;
 import com.asc.clinicms.appointments.entity.AppointmentStatus;
+import com.asc.clinicms.appointments.mapper.AppointmentMapper;
 import com.asc.clinicms.appointments.repo.AppointmentRepository;
 import com.asc.clinicms.common.exception.BusinessException;
 import com.asc.clinicms.common.exception.ErrorCode;
@@ -91,7 +93,7 @@ public class AppointmentService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Appointment> list(Long doctorId, Long patientId, LocalDateTime from, LocalDateTime to, Pageable pageable) {
+    private Page<Appointment> listEntities(Long doctorId, Long patientId, LocalDateTime from, LocalDateTime to, Pageable pageable) {
 
         if ((from == null) != (to == null)) {
             throw new BusinessException(
@@ -125,6 +127,18 @@ public class AppointmentService {
 
         // hiç filtre yoksa tüm randevular
         return appointmentRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AppointmentResponse> list(
+            Long doctorId,
+            Long patientId,
+            LocalDateTime from,
+            LocalDateTime to,
+            Pageable pageable
+    ) {
+        return listEntities(doctorId, patientId, from, to, pageable)
+                .map(AppointmentMapper::toResponse);
     }
 
     private void validateTimeRange(LocalDateTime startAt, LocalDateTime endAt) {
