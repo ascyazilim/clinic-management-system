@@ -16,3 +16,8 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
+
+app:
+  jwt:
+    secret: "CHANGE_ME_TO_A_LONG_RANDOM_STRING_AT_LEAST_64_CHARS________________________"
+    access-token-exp-min: 60
